@@ -1,62 +1,53 @@
-const { Router } = require("express");
+const express = require("express");
 const adminMiddleware = require("../middleware/admin");
-const router = Router();
-const {Admin , Course } =require("./indexForDb");
-const app = express();
+const { Admin, Course } = require("../db");
+const router = express.Router();
 
-// Admin Routes
-app.post('/signup', async(req, res) => {
+router.post('/signup', async (req, res) => {
     // Implement admin signup logic
-    const { username , password}  = req.headers;
-    try{
-        const existingAdmin = await Admin.FindOne({username});
-            if(existingAdmin){
-                res.json({
-                    msg: "User already exist"
-                })
-            }
-            const newAdmin = Admin({username ,password});
-            await newAdmin.save();
-            res.json({
-                msg: " Admin Created Succesfully"
-            })
-    }
-    catch(err){
-        console.log("There might bew some error");
-        res.status(401);
-    }
+    const username = req.body.username;
+    const password = req.body.password;
 
+    // check if a user with this username already exists
+    await Admin.create({
+        username: username,
+        password: password
+    })
+
+    res.json({
+        message: 'Admin created successfully'
+    })
+    
 });
 
-app.post('/courses', adminMiddleware, async (req, res) => {
+router.post('/courses', adminMiddleware, async (req, res) => {
     // Implement course creation logic
+    const title = req.body.title;
+    const description = req.body.description;
+    const imageLink = req.body.imageLink;
+    const price = req.body.price;
+    // zod
+    const newCourse = await Course.create({
+        title,
+        description,
+        imageLink,
+        price
+    })
 
-    const { id, title , description  } = req.headers;
-    try{const existingBook = await Course.FindOne({id});
-    if(existingBook){
-        res.status|(402).json({msg: "Book already present in lib"});
-    }
-
-    const newBook = Course({id ,title, description});
-    newBook.save();
-    res.json({msg: "book Added succesfully"});
-    }
-    catch(err){
-        console.log(err);
-    }
-
+    res.json({
+        message: 'Course created successfully', courseId: newCourse._id
+    })
 });
 
-app.get('/courses', adminMiddleware, (req, res) => {
+router.get('/courses', adminMiddleware, async (req, res) => {
     // Implement fetching all courses logic
-    try{
-        const allCourses = Course.find();
-        res.json({allCourses});
-    }
-    catch(err){
-            res.json({msg: "it's not u , it's us"});
-    }
+    const response = await Course.find({});
+
+    res.json({
+        courses: response
+    })
 
 });
+
 
 module.exports = router;
